@@ -300,6 +300,8 @@ let active = null;       // {plan, startIso}
 let sessions = [];        // [{plan, date, startIso, endIso, durationSec}]
 let dashExercise = null;
 let tickHandle = null;
+let logFormOpen = false;
+let logMsg = '';
 
 function todayStr(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fmtDate(iso){ const [y,m,d] = iso.split('-'); return d+'/'+m; }
@@ -386,7 +388,12 @@ function lineChart(entries){
 
 function renderDash(){
   const all = allExercises();
-  const totalSessions = new Set(Object.values(history).flat().map(h=>h.date)).size;
+  const trainedDates = new Set([
+    ...Object.values(history).flat().map(h=>h.date),
+    ...Object.values(planoLog),
+    ...sessions.map(s=>s.date)
+  ]);
+  const totalSessions = trainedDates.size;
   const totalChecked = Object.keys(checks).filter(k=>checks[k]).length;
   let lastDate = null;
   Object.values(history).flat().forEach(h => { if(!lastDate || h.date > lastDate) lastDate = h.date; });
@@ -466,14 +473,16 @@ function renderSuggestion(){
     <div class="s-plan">${top} · ${DATA[top].title}</div>
     <div class="s-why">${why} · tempo estimado ~${formatDuration(estimateSeconds(top))}</div>
     <button class="s-btn" onclick="goToPlan('${top}')">Abrir este treino</button>
-    <br><button class="log-toggle" onclick="document.getElementById('logForm').classList.toggle('open')">Já treinei outro plano (registrar manualmente)</button>
-    <div class="log-form" id="logForm">
+    <br><button class="log-toggle" onclick="toggleLogForm()">Já treinei outro plano (registrar manualmente)</button>
+    <div class="log-form ${logFormOpen?'open':''}" id="logForm">
       <select id="logPlan">${PLAN_KEYS.map(k=>`<option value="${k}">${k} · ${DATA[k].title}</option>`).join('')}</select>
       <select id="logWhen"><option value="0">Hoje</option><option value="1">Ontem</option><option value="2">Anteontem</option></select>
       <button onclick="manualLog()">Registrar</button>
     </div>
+    ${logMsg ? `<div style="font-size:12px;color:var(--accent);margin-top:8px;">${logMsg}</div>` : ''}
   `;
 }
+function toggleLogForm(){ logFormOpen = !logFormOpen; logMsg=''; renderSuggestion(); }
 function goToPlan(key){
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('active'));
   document.querySelector(`#tabs button[data-day="${key}"]`).classList.add('active');
@@ -483,11 +492,15 @@ function goToPlan(key){
 }
 function manualLog(){
   const plan = document.getElementById('logPlan').value;
-  const back = parseInt(document.getElementById('logWhen').value, 10);
+  const whenSel = document.getElementById('logWhen');
+  const back = parseInt(whenSel.value, 10);
+  const whenLabel = whenSel.options[whenSel.selectedIndex].text;
   const d = new Date(); d.setDate(d.getDate()-back);
   const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  if(!planoLog[plan] || iso > planoLog[plan]) planoLog[plan] = iso;
+  planoLog[plan] = iso;
   savePlanoLog();
+  logFormOpen = true;
+  logMsg = `✓ ${plan} · ${DATA[plan].title} registrado como treinado: ${whenLabel}`;
   renderSuggestion();
   renderDash();
 }
