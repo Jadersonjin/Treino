@@ -160,6 +160,7 @@
   <button data-day="C">C · Pernas</button>
   <button data-day="D">D · Ombro/Abdômen</button>
   <button data-day="E">E · Braços extra</button>
+  <button data-day="F">F · Abdômen/Cardio</button>
   <button data-day="DASH">📊 Progresso</button>
 </nav>
 
@@ -235,15 +236,36 @@ const DATA = {
     ex:[
       {id:"E1",move:"curl",name:"Rosca martelo",note:"Trabalha bíceps e antebraço",sets:"3x12-15",rest:"60s",alt:"Rosca martelo na polia (corda)"},
       {id:"E2",move:"dip",name:"Mergulho no banco (tríceps)",note:"",sets:"3x8-10",rest:"60s",alt:"Tríceps coice (kickback) com halteres"}
+    ]},
+  F: { title:"Abdômen & Cardio", sub:"Core completo (reto, oblíquos, infra) + condicionamento cardiovascular",
+    tip:"Faça o cardio no fim do treino ou em um dia separado dos pesos, pra não gastar energia que você precisa pra levantar carga nos outros planos.",
+    ex:[
+      {id:"F1",move:"cardio",name:"Esteira ou bike — cardio contínuo",note:"Intensidade moderada: dá pra conversar, mas não pra cantar",sets:"1x20-30min",rest:"—",alt:"Elíptico ou step"},
+      {id:"F2",move:"crunch",name:"Abdominal supra (solo)",note:"",sets:"3x15-20",rest:"45s",alt:"Abdominal na máquina"},
+      {id:"F3",move:"legRaise",name:"Elevação de pernas (infra)",note:"Deitado no solo ou na barra paralela",sets:"3x12-15",rest:"45s",alt:"Elevação de joelhos na cadeira romana"},
+      {id:"F4",move:"bicycle",name:"Abdominal bicicleta (oblíquos)",note:"",sets:"3x20 (10 cada lado)",rest:"45s",alt:"Prancha lateral com rotação"},
+      {id:"F5",move:"plank",name:"Prancha isométrica",note:"",sets:"3x40-60s",rest:"45s",alt:"Prancha com apoio nos joelhos"},
+      {id:"F6",move:"cardio",name:"HIIT finalizador (esteira/bike)",note:"30s forte / 90s leve, repetir",sets:"8 rounds",rest:"—",alt:"Corda ou polichinelo"}
     ]}
 };
-const PLAN_KEYS = ["A","B","C","D","E"];
+const PLAN_KEYS = ["A","B","C","D","E","F"];
 
 /* ---- estimated duration per plan ---- */
 function estimateSeconds(key){
   const ex = DATA[key].ex;
   let total = 300; // warmup
   ex.forEach(e=>{
+    const minMatch = e.sets.match(/(\d+)(?:-(\d+))?min/);
+    const roundsMatch = e.sets.match(/(\d+)\s*rounds/);
+    if(minMatch){
+      const mins = minMatch[2] ? (parseInt(minMatch[1],10)+parseInt(minMatch[2],10))/2 : parseInt(minMatch[1],10);
+      total += mins*60;
+      return;
+    }
+    if(roundsMatch){
+      total += parseInt(roundsMatch[1],10) * 120;
+      return;
+    }
     const setsMatch = e.sets.match(/(\d+)x/);
     const sets = setsMatch ? parseInt(setsMatch[1],10) : 3;
     const restMatch = e.rest.match(/(\d+)s/);
@@ -286,7 +308,10 @@ const MOVES = {
   curl: `<circle cx="45" cy="25" r="7"/><line x1="45" y1="32" x2="45" y2="75"/><line x1="45" y1="75" x2="38" y2="100"/><line x1="45" y1="75" x2="52" y2="100"/><line x1="45" y1="42" x2="30" y2="65"/><path d="M30 70 L38 48" stroke="var(--motion)" stroke-dasharray="3 3" fill="none" marker-end="url(#arr)"/>`,
   tricep: `<circle cx="45" cy="25" r="7"/><line x1="45" y1="32" x2="45" y2="75"/><line x1="45" y1="75" x2="38" y2="100"/><line x1="45" y1="75" x2="52" y2="100"/><line x1="45" y1="40" x2="55" y2="55"/><line x1="55" y1="55" x2="50" y2="80"/><path d="M55 60 L50 78" stroke="var(--motion)" stroke-dasharray="3 3" marker-end="url(#arr)"/>`,
   crunch: `<line x1="70" y1="10" x2="70" y2="30" stroke="var(--equip)" stroke-width="3"/><circle cx="50" cy="35" r="7"/><path d="M53 41 Q60 55 55 68" fill="none"/><line x1="55" y1="68" x2="45" y2="90"/><line x1="55" y1="68" x2="65" y2="90"/><line x1="50" y1="45" x2="60" y2="30"/><path d="M50 50 Q55 40 60 32" stroke="var(--motion)" stroke-dasharray="3 3" fill="none" marker-end="url(#arr)"/>`,
-  plank: `<circle cx="20" cy="60" r="7"/><line x1="27" y1="62" x2="85" y2="70"/><line x1="20" y1="65" x2="15" y2="80"/><line x1="85" y1="70" x2="95" y2="95"/><line x1="85" y1="70" x2="100" y2="95"/><line x1="10" y1="82" x2="22" y2="82" stroke="var(--equip)" stroke-width="3"/>`
+  plank: `<circle cx="20" cy="60" r="7"/><line x1="27" y1="62" x2="85" y2="70"/><line x1="20" y1="65" x2="15" y2="80"/><line x1="85" y1="70" x2="95" y2="95"/><line x1="85" y1="70" x2="100" y2="95"/><line x1="10" y1="82" x2="22" y2="82" stroke="var(--equip)" stroke-width="3"/>`,
+  cardio: `<circle cx="35" cy="20" r="7"/><line x1="35" y1="27" x2="45" y2="55"/><line x1="45" y1="55" x2="65" y2="40"/><line x1="45" y1="55" x2="60" y2="90"/><line x1="45" y1="55" x2="25" y2="75"/><line x1="35" y1="30" x2="20" y2="15"/><line x1="35" y1="30" x2="50" y2="40"/><path d="M75 30 Q92 50 75 70" stroke="var(--motion)" stroke-dasharray="3 3" fill="none" marker-end="url(#arr)"/>`,
+  legRaise: `<line x1="15" y1="60" x2="55" y2="60" stroke="var(--equip)" stroke-width="3"/><circle cx="20" cy="55" r="7"/><line x1="27" y1="58" x2="55" y2="60"/><line x1="55" y1="60" x2="55" y2="30"/><path d="M55 55 L55 32" stroke="var(--motion)" stroke-dasharray="3 3" marker-end="url(#arr)"/>`,
+  bicycle: `<line x1="15" y1="70" x2="60" y2="70" stroke="var(--equip)" stroke-width="3"/><circle cx="20" cy="60" r="7"/><line x1="27" y1="63" x2="50" y2="68"/><line x1="50" y1="68" x2="65" y2="50"/><line x1="50" y1="68" x2="70" y2="80"/><path d="M55 60 Q62 50 68 47" stroke="var(--motion)" stroke-dasharray="3 3" fill="none" marker-end="url(#arr)"/>`
 };
 function moveDiagram(key){
   return `<svg viewBox="0 0 110 115"><defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--motion)"/></marker></defs><g fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${MOVES[key]}</g></svg>`;
